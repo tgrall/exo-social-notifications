@@ -1,0 +1,179 @@
+
+<project xmlns:pom="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.exoplatform.extensions</groupId>
+        <artifactId>platform.social.notifications.parent</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <groupId>org.exoplatform.extensions</groupId>
+    <artifactId>social.notification.service</artifactId>
+    <packaging>jar</packaging>
+    <version>1.0</version>
+    <url>http://www.exoplatform.org</url>
+    <name>eXo Platform Extension : Social Notification Service</name>
+    <description>eXo Platform Social Notification Service</description>
+	
+    <dependencies>
+
+        <dependency>
+            <groupId>org.exoplatform.social</groupId>
+            <artifactId>exo.social.component.core</artifactId>
+            <scope>provided</scope>
+            <version>${org.exoplatform.social.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.exoplatform.social</groupId>
+            <artifactId>exo.social.component.service</artifactId>
+            <scope>provided</scope>
+            <version>${org.exoplatform.social.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.exoplatform.social</groupId>
+            <artifactId>exo.social.component.common</artifactId>
+            <scope>provided</scope>
+            <version>${org.exoplatform.social.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.exoplatform.commons</groupId>
+            <artifactId>exo.platform.commons.component.product</artifactId>
+            <version>${org.exoplatform.commons.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.exoplatform.kernel</groupId>
+            <artifactId>exo.kernel.container</artifactId>
+            <version>${org.exoplatform.kernel.version}</version>
+            <type>jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.chromattic</groupId>
+            <artifactId>chromattic.ext</artifactId>
+            <version>${org.chromattic.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.chromattic</groupId>
+            <artifactId>chromattic.core</artifactId>
+            <version>${org.chromattic.version}</version>
+            <scope>provided</scope>
+        </dependency>        
+        
+        <dependency>
+            <groupId>org.exoplatform.portal</groupId>
+            <artifactId>exo.portal.component.common</artifactId>
+            <version>${org.exoplatform.portal.version}</version>
+            <type>jar</type>
+            <scope>provided</scope>
+        </dependency>        
+        
+        <dependency>
+            <groupId>org.exoplatform.portal</groupId>
+            <artifactId>exo.portal.component.scripting</artifactId>
+            <version>${org.exoplatform.portal.version}</version>
+            <type>jar</type>
+        </dependency>
+
+    <dependency>
+      <groupId>org.gatein.common</groupId>
+      <artifactId>common-common</artifactId>
+      <scope>provided</scope>
+      <version>${org.gatein.common.version}</version>
+    </dependency>
+      
+      <dependency>
+        <groupId>org.gatein.mop</groupId>
+        <artifactId>mop-api</artifactId>
+        <version>${org.gatein.mop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.gatein.mop</groupId>
+        <artifactId>mop-spi</artifactId>
+        <version>${org.gatein.mop.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.gatein.mop</groupId>
+        <artifactId>mop-core</artifactId>
+        <version>${org.gatein.mop.version}</version>
+      </dependency>
+      
+        
+      <!--  Shindig -->
+        <dependency>
+            <groupId>org.gatein.shindig</groupId>
+            <artifactId>shindig-gadgets</artifactId>
+            <version>${org.shindig.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.gatein.shindig</groupId>
+            <artifactId>shindig-features</artifactId>
+            <version>${org.shindig.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.gatein.shindig</groupId>
+            <artifactId>shindig-common</artifactId>
+            <version>${org.shindig.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.gatein.shindig</groupId>
+            <artifactId>shindig-social-api</artifactId>
+            <version>${org.shindig.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+
+    <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <outputDirectory>target/classes</outputDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.gtmpl</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.4.3</version>
+                <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>        
+    </build>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>
+

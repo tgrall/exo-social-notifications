@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.exoplatform.extensions</groupId>
+  <artifactId>platform.social.notifications.parent</artifactId>
+  <version>1.0</version>
+  <packaging>pom</packaging>
+  <name>eXo Platform Extension : Social Notifications</name>
+
+
+  <properties>
+    <jdk.min.version>1.6</jdk.min.version>
+    <preparationGoals>clean install</preparationGoals>
+
+    <org.exoplatform.kernel.version>2.3.4-GA</org.exoplatform.kernel.version>
+    <org.exoplatform.core.version>2.4.4-GA</org.exoplatform.core.version>
+    <org.exoplatform.ws.version>2.2.4-GA</org.exoplatform.ws.version>
+    <org.exoplatform.jcr.version>1.14.4-GA</org.exoplatform.jcr.version>
+    <org.exoplatform.jcr-services.version>1.14.4-GA</org.exoplatform.jcr-services.version>
+    <org.exoplatform.portal.version>3.2.2-PLF</org.exoplatform.portal.version>
+    <org.exoplatform.webos.version>2.0.1</org.exoplatform.webos.version>
+    <org.exoplatform.commons.version>1.1.5</org.exoplatform.commons.version>
+    <org.exoplatform.gwtframework.version>1.1.2</org.exoplatform.gwtframework.version>
+    <org.exoplatform.ide.version>1.1.3</org.exoplatform.ide.version>
+    <org.exoplatform.cs.version>2.2.6</org.exoplatform.cs.version>
+    <org.exoplatform.ks.version>2.2.6</org.exoplatform.ks.version>
+    <org.exoplatform.ecms.version>2.3.3</org.exoplatform.ecms.version>
+    <org.exoplatform.social.version>1.2.6</org.exoplatform.social.version>
+    <org.exoplatform.integ.version>1.0.4</org.exoplatform.integ.version>
+    <org.exoplatform.leadcapture.version>3.4</org.exoplatform.leadcapture.version>
+    <org.crsh.version>1.0.0-beta15</org.crsh.version>
+    <org.exoplatform.exopackage.version>1.1.4</org.exoplatform.exopackage.version>
+    <org.shindig.version>2.0.2</org.shindig.version>
+    <org.chromattic.version>1.1.1</org.chromattic.version>
+    <org.gatein.common.version>2.0.4-GA</org.gatein.common.version>
+    <org.gatein.mop.version>1.1.0-GA</org.gatein.mop.version>
+
+
+    
+
+  
+  </properties>
+
+  <modules>
+    <module>social-notification-service</module>
+  </modules>
+
+      
+  
+  
+</project>
