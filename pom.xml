@@ -11,7 +11,6 @@
   <properties>
     <jdk.min.version>1.6</jdk.min.version>
     <preparationGoals>clean install</preparationGoals>
-
     <org.exoplatform.kernel.version>2.3.4-GA</org.exoplatform.kernel.version>
     <org.exoplatform.core.version>2.4.4-GA</org.exoplatform.core.version>
     <org.exoplatform.ws.version>2.2.4-GA</org.exoplatform.ws.version>
@@ -34,11 +33,6 @@
     <org.chromattic.version>1.1.1</org.chromattic.version>
     <org.gatein.common.version>2.0.4-GA</org.gatein.common.version>
     <org.gatein.mop.version>1.1.0-GA</org.gatein.mop.version>
-
-
-    
-
-  
   </properties>
 
   <modules>

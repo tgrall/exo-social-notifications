@@ -20,23 +20,35 @@ package org.exoplatform.extension.social.notifications;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 import org.apache.commons.lang.StringUtils;
 import org.exoplatform.commons.utils.ListAccess;
 import org.exoplatform.container.ExoContainer;
 import org.exoplatform.container.ExoContainerContext;
 import org.exoplatform.container.xml.InitParams;
+import org.exoplatform.extension.social.notifications.model.MessageTemplate;
+import org.exoplatform.extension.social.notifications.model.SocialNotificationConfiguration;
 import org.exoplatform.groovyscript.GroovyTemplate;
+import org.exoplatform.groovyscript.text.BindingContext;
 import org.exoplatform.groovyscript.text.TemplateService;
+import org.exoplatform.services.log.ExoLogger;
+import org.exoplatform.services.log.Log;
 import org.exoplatform.services.mail.MailService;
+import org.exoplatform.services.organization.OrganizationService;
 import org.exoplatform.social.core.identity.model.Identity;
 import org.exoplatform.social.core.identity.model.Profile;
 import org.exoplatform.social.core.identity.provider.OrganizationIdentityProvider;
@@ -52,6 +64,8 @@ import org.exoplatform.social.core.space.spi.SpaceService;
  * @author tgrall
  */
 public class SocialNotificationService {
+
+    private Log log = ExoLogger.getLogger(SocialNotificationService.class);
     
     
     private String portalUrl = null;
@@ -59,16 +73,25 @@ public class SocialNotificationService {
     private IdentityManager identityManager = null;
     private TemplateService templateService = null; //TODO: to use instead of strings
     private MailService mailService = null;
+    private OrganizationService orgService = null;
 
     public SocialNotificationService(InitParams initParams) {
     }
 
-    public void sendPendingUsersToSpaceManager() {
+    public void spaceNotification() {
+            log.info("=============== SPACE NOTIFICATION JOB : Start demo ========================");
         try {
+            
+            Map<String, List<Space>> invitedUsersList = new HashMap();
+            
+            
+            
             List<Space> spaces = this.getSpaceService().getAllSpaces(); //tODO upgrade to proper method
             for (Space space : spaces) {
-                String[] pendingUsers = space.getPendingUsers();
-                if (pendingUsers != null) {
+                String[] pendingUsers = space.getPendingUsers();                
+                String[] invitedUsers = space.getInvitedUsers();
+                
+                if (pendingUsers != null && pendingUsers.length != 0) {
                     String managers[] = space.getManagers();
                     List<Profile> managerList = new ArrayList();
                     for (String manager : managers) {
@@ -80,33 +103,61 @@ public class SocialNotificationService {
                     for (String pendingUser : pendingUsers) {
                         Profile userProfile = getIdentityManager().getOrCreateIdentity(OrganizationIdentityProvider.NAME, pendingUser, false).getProfile();
                         userList.add(userProfile);
-
                     }
 
-                    this.sendMailForSpace(space, managerList, userList);
+                    this.pendingUserNotification(space, managerList, userList);
                 }
+                
+                
+                if (invitedUsers != null) {
+                    for (String invitedUser : invitedUsers) {
+                        if ( invitedUsersList.containsKey(invitedUser) ) {
+                            invitedUsersList.get(invitedUser).add(space);       
+                        } else {
+                            List newList = new ArrayList<Space>();
+                            newList.add(space);
+                            
+                            invitedUsersList.put(invitedUser, newList );
+                        }
+                    }
+                }
+                
+
             }
 
-
-
+            
+            // send mail to invited users
+            this.invitedUserNotification(invitedUsersList);
+            
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        log.info("=============== SPACE NOTIFICATION JOB : End ========================");
+    }
+
+    private OrganizationService getOrganizationService() {
+        if (orgService != null) {
+            return orgService;
+        }
+        ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
+        orgService = (OrganizationService) containerContext.getComponentInstanceOfType(OrganizationService.class);
+        return orgService;
     }
 
     private SpaceService getSpaceService() {
-        
+
         if (spaceService != null) {
             return spaceService;
         }
-        
+
         ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
         spaceService = (SpaceService) containerContext.getComponentInstanceOfType(SpaceService.class);
         return spaceService;
     }
 
     private IdentityManager getIdentityManager() {
-        if (identityManager != null ) {
+        if (identityManager != null) {
             return identityManager;
         }
         ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
@@ -119,7 +170,7 @@ public class SocialNotificationService {
             return mailService;
         }
         ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
-        mailService =  (MailService) containerContext.getComponentInstanceOfType(MailService.class);
+        mailService = (MailService) containerContext.getComponentInstanceOfType(MailService.class);
         return mailService;
     }
 
@@ -128,6 +179,88 @@ public class SocialNotificationService {
         templateService = (TemplateService) containerContext.getComponentInstanceOfType(TemplateService.class);
         return templateService;
     }
+    
+    private MessageTemplate getMailMessageTemplate(String type, Locale locale) {
+        ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
+        SocialNotificationConfiguration configuration = (SocialNotificationConfiguration) containerContext.getComponentInstanceOfType(SocialNotificationConfiguration.class);
+        
+        
+        MessageTemplate returnValue =  configuration.getMailTemplate(type, locale);
+        
+        return returnValue;
+        
+    }
+    
+    
+    /**
+     * 
+     * @param invitedUsersList 
+     */
+    private void invitedUserNotification(Map<String, List<Space>> invitedUsersList)  {
+        
+        for (Map.Entry<String, List<Space>> entry : invitedUsersList.entrySet()) {
+            
+            try {
+                String userId = entry.getKey();
+                List<Space> spacesList =  entry.getValue();
+                Locale locale = Locale.getDefault();
+                
+                // get default locale of the manager
+                String userLocale = this.getOrganizationService().getUserProfileHandler().findUserProfileByName(userId).getAttribute("user.language");
+                Profile userProfile = getIdentityManager().getOrCreateIdentity(OrganizationIdentityProvider.NAME, userId, false).getProfile();
+                
+                if ( userLocale != null && !userLocale.trim().isEmpty() ) {
+                    locale = new Locale(userLocale);
+                }   
+                
+                // getMessageTemplate
+                MessageTemplate messageTemplate = this.getMailMessageTemplate(SocialNotificationConfiguration.MAIL_TEMPLATE_SPACE_PENDING_INVITATIONS, locale);
+
+                GroovyTemplate g = new GroovyTemplate( messageTemplate.getSubject() );
+                
+                Map binding = new HashMap();
+                binding.put("userProfile",  userProfile );
+                binding.put("portalUrl", this.getPortalUrl());
+                binding.put("invitationUrl",  this.getPortalUrl() + "/portal/intranet/invitationSpace" ); 
+                binding.put("spacesList", spacesList );
+                
+                String subject = g.render(binding); 
+                
+                g = new GroovyTemplate( messageTemplate.getHtmlContent() );
+                String htmlContent = g.render(binding);  
+                
+                g = new GroovyTemplate( messageTemplate.getPlainTextContent() );
+                String textContent = g.render(binding);
+                
+                MailService mailService = this.getMailService();
+                Session mailSession = mailService.getMailSession();
+                MimeMessage message = new MimeMessage(mailSession);
+                message.setFrom(this.getSenderAddress());
+
+                // send email to invited user
+                message.setRecipient(RecipientType.TO, new InternetAddress(userProfile.getEmail(), userProfile.getFullName()));
+                message.setSubject(subject);
+                MimeMultipart content = new MimeMultipart("alternative");
+                MimeBodyPart text = new MimeBodyPart();
+                MimeBodyPart html = new MimeBodyPart();
+                text.setText( textContent );
+                html.setContent(htmlContent , "text/html; charset=ISO-8859-1");
+                content.addBodyPart(text);
+                content.addBodyPart(html);
+                message.setContent( content );
+                
+                log.info("Sending mail to : "+ userProfile.getEmail() +" : "+ subject +"\n"+ html );
+                
+                mailService.sendMessage(message);
+            
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        
+    }
+    
 
     /**
      * 
@@ -135,83 +268,110 @@ public class SocialNotificationService {
      * @param managers
      * @param pendingUsers 
      */
-    private void sendMailForSpace(Space space, List<Profile> managers, List<Profile> pendingUsers) {
+    private void pendingUserNotification(Space space, List<Profile> managerList, List<Profile> pendingUsers) {
         //TODO : use groovy template stored in JCR for mail information (cleaner, real templating)
+    
+        log.info("Sending mail to space manager : pending users");
+        
+
         try {
-            String subject = this.getSubject();
-            subject = StringUtils.replace(subject, "$spaceName", space.getDisplayName());
-            subject = StringUtils.replace(subject, "$numberOfPendingUser", Integer.toString(pendingUsers.size()));
 
-            String htmlContent = this.getHtmlContent(); // TODO : replace with groovy template and binding
-            StringBuilder spaceAvatarHtml = new StringBuilder();
-            if (space.getAvatarUrl() != null) {
-                spaceAvatarHtml.append("<img src='").append(this.getPortalUrl()).append(space.getAvatarUrl()).append("' ");
-                spaceAvatarHtml.append(" height='40px' align='left' style='margin-right:10px' />");
+            // loop on each manager and send mail
+            // like that each manager will have the mail in its preferred language
+            // ideally should be done in a different executor
+            // TODO: see if we can optimize this to avoid do it for all user
+            //       - send a mail to all the users in the same time (what about language)
+            //       - cache the template result and send mail
+
+            for (Profile manager : managerList) {
+                Locale locale = Locale.getDefault();
+                
+                // get default locale of the manager
+                String userId = manager.getIdentity().getRemoteId();
+                String userLocale = this.getOrganizationService().getUserProfileHandler().findUserProfileByName(userId).getAttribute("user.language");
+                if ( userLocale != null && !userLocale.trim().isEmpty() ) {
+                    locale = new Locale(userLocale);
+                }
+                
+                
+                // getMessageTemplate
+                MessageTemplate messageTemplate = this.getMailMessageTemplate(SocialNotificationConfiguration.MAIL_TEMPLATE_SPACE_PENDING_USERS, locale);
+
+                GroovyTemplate g = new GroovyTemplate( messageTemplate.getSubject() );
+                
+                String spaceUrl = this.getPortalUrl() + "/portal/g/:spaces:" + space.getUrl() + "/" + space.getUrl() + "/settings";  //TODO: see which API to use
+                String spaceAvatarUrl = null;
+                if ( space.getAvatarUrl() != null ) {
+                    spaceAvatarUrl = this.getPortalUrl() + space.getAvatarUrl();
+                }
+                
+                Map binding = new HashMap();
+                binding.put("space", space);
+                binding.put("portalUrl", this.getPortalUrl());
+                binding.put("spaceSettingUrl", spaceUrl);
+                binding.put("spaceAvatarUrl", spaceAvatarUrl);
+                binding.put("userPendingList",  pendingUsers );
+                
+                String subject = g.render(binding); 
+                
+                g = new GroovyTemplate( messageTemplate.getHtmlContent() );
+                String htmlContent = g.render(binding);                 
+                
+                g = new GroovyTemplate( messageTemplate.getPlainTextContent() );
+                String textContent = g.render(binding);                 
+
+                
+                MailService mailService = this.getMailService();
+                Session mailSession = mailService.getMailSession();
+                MimeMessage message = new MimeMessage(mailSession);
+                message.setFrom(this.getSenderAddress());
+
+                // send email to manager
+                message.setRecipient(RecipientType.TO, new InternetAddress(manager.getEmail(), manager.getFullName()));
+                message.setSubject(subject);
+                MimeMultipart content = new MimeMultipart("alternative");
+                MimeBodyPart text = new MimeBodyPart();
+                MimeBodyPart html = new MimeBodyPart();
+                text.setText( textContent );
+                html.setContent(htmlContent , "text/html; charset=ISO-8859-1");
+                content.addBodyPart(text);
+                content.addBodyPart(html);
+                message.setContent( content );
+                
+
+                log.info("Sending mail to"+ manager.getEmail() +" : "+ subject +" : "+ subject +"\n"+ html);
+                
+                //mailService.sendMessage(message);
             }
-            htmlContent = StringUtils.replace(htmlContent, "$spaceAvatar", spaceAvatarHtml.toString());
-            htmlContent = StringUtils.replace(htmlContent, "$spaceName", space.getDisplayName());
-            htmlContent = StringUtils.replace(htmlContent, "$numberOfPendingUser", Integer.toString(pendingUsers.size()));
-            StringBuilder sb = new StringBuilder();
-            for (Profile profile : pendingUsers) {
-                sb.append("<img height='30px'  valign='middle' src='").append(this.getPortalUrl()).append(profile.getAvatarUrl()).append("' />");
-                sb.append("&nbsp;<b><a href='").append(this.getPortalUrl()).append(profile.getUrl()).append("' >").append(profile.getFullName()).append("</a></b>");
-                sb.append("<br/>\n");
 
-            }
 
-            htmlContent = StringUtils.replace(htmlContent, "$pendingUserList", sb.toString());
-            String spaceUrl = this.getPortalUrl() + "/portal/g/:spaces:" + space.getUrl() + "/" + space.getUrl() + "/settings";  //TODO: see which API to use
-            htmlContent = StringUtils.replace(htmlContent, "$spaceUrl", spaceUrl);
-
-            MailService mailService = this.getMailService();
-            Session mailSession = mailService.getMailSession();
-            MimeMessage message = new MimeMessage(mailSession);
-            message.setFrom(this.getSenderAddress());
-            message.setRecipients(RecipientType.TO, this.getSpaceManagersEmail(managers));
-            
-            
-            message.setSubject(subject);
-            message.setContent(htmlContent, "text/html ; charset=ISO-8859-1");
-            mailService.sendMessage(message);
-            
-            
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
-
+    
+    
+    
+    
     /**
      * TODO: make it dynamic to search the value in a generic configuration in the JCR
      * @return the URL of the portal based on the exo.global.url system properties. (default is http://127.0.0.1:8080
      */
     private String getPortalUrl() {
-        if (portalUrl != null ) {
+        if (portalUrl != null) {
             return portalUrl;
         }
         String portalUrl = System.getProperty("exo.global.url");
         if (portalUrl == null) {
             portalUrl = "http://127.0.0.1:8080";
-        }        
+        }
         return portalUrl;
     }
 
-
     /**
-     * Get the Manager list email addresses
-     * @param managers
-     * @return list of internet email addresses of the managers of the space
-     * @throws UnsupportedEncodingException 
+     * 
+     * @return the sender address 
      */
-    private InternetAddress[] getSpaceManagersEmail(List<Profile> managers) throws UnsupportedEncodingException {
-        List<InternetAddress> addresses = new ArrayList<InternetAddress>();
-        for (Profile manager : managers) {
-            InternetAddress add = new InternetAddress( manager.getEmail(), manager.getFullName());
-            addresses.add(add);
-        }
-        return addresses.toArray( new InternetAddress[ managers.size() ] );
-    }
-   
-    
     private InternetAddress getSenderAddress() {
         try {
             return new InternetAddress("noreply@exo.intranet.com", "eXo Intranet");
@@ -220,34 +380,4 @@ public class SocialNotificationService {
         }
     }
 
-    private String getSubject() {
-        return "Space '$spaceName' : $numberOfPendingUser Request(s) to join";
-    }
-
-    private String getHtmlContent() {
-        StringBuilder sb = new StringBuilder();
-
-
-        sb.append("<html>").append("\n");
-        sb.append("<body style='font-family: Verdana,Arial,sans-serif;' >").append("\n");
-
-        sb.append("<h2>Space $spaceName : $numberOfPendingUser request(s) to join</h2>").append("\n");
-
-
-        sb.append("$spaceAvatar");
-        sb.append("As manager of this space you are invited to accept or reject the request at the following location :<br>").append("\n");
-        sb.append("<a href='$spaceUrl'>Manage '$spaceName' Space </a>").append("\n");
-
-        sb.append("<div style='margin:10px'><b>Pending Users :</b><br>").append("\n");
-        sb.append("<div style='margin-left:30px' >").append("\n");
-        sb.append("$pendingUserList").append("\n");
-        sb.append("</div>").append("\n");
-        sb.append("</div>").append("\n");
-
-
-        sb.append("</body>").append("\n");
-        sb.append("</html>").append("\n");
-
-        return sb.toString();
-    }
 }

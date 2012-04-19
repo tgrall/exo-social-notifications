@@ -4,20 +4,31 @@
    xsi:schemaLocation="http://www.exoplatform.org/xml/ns/kernel_1_2.xsd http://www.exoplatform.org/xml/ns/kernel_1_2.xsd"
    xmlns="http://www.exoplatform.org/xml/ns/kernel_1_2.xsd">
        
-       
-       
-
-
     <!-- REST Service to manually send email to administrators : /rest/extensions/social/notification/send-pending-users-to-managers -->
     <component>
         <type>org.exoplatform.extension.social.notifications.rest.SocialNotificationManager</type>
     </component> 
 
-
+    <!-- Main Service -->
     <component>
         <key>org.exoplatform.extension.social.notifications.SocialNotificationService</key>
         <type>org.exoplatform.extension.social.notifications.SocialNotificationService</type>
     </component>
+    
+    
+    <!-- Configuration Manager : Store configuration in JCR (ApplicationData) -->
+    <component>
+        <key>org.exoplatform.extension.social.notifications.model.SocialNotificationConfiguration</key>
+        <type>org.exoplatform.extension.social.notifications.model.SocialNotificationConfiguration</type>
+    </component>
+    
+    
+    <!-- Import content and template into the repository -->
+    <component>
+        <type>org.exoplatform.services.deployment.WCMContentInitializerService</type>
+    </component>
+    
+    
     
     <!-- TODO : Create this service dynamically and manage it from the UI -->
     <external-component-plugins>
@@ -42,6 +53,86 @@
 
     </external-component-plugins>
     
-    
+    <external-component-plugins profiles="all,default,social">
+        <target-component>org.exoplatform.services.jcr.RepositoryService</target-component>
+        <component-plugin>
+            <name>add.space.access.nodeType</name>
+            <set-method>addPlugin</set-method>
+            <type>org.exoplatform.services.jcr.impl.AddNodeTypePlugin</type>
+            <init-params>
+                <values-param>
+                    <name>autoCreatedInNewRepository</name>
+                    <description>Node types configuration file</description>
+                    <value>jar:/conf/portal/social-notification-mail-templates.xml</value>
+                </values-param>
+            </init-params>
+        </component-plugin>
+    </external-component-plugins>
+
+    <external-component-plugins profiles="all,default,social">
+        <target-component>org.exoplatform.commons.chromattic.ChromatticManager</target-component>
+        <component-plugin>
+            <name>chromattic</name>
+            <set-method>addLifeCycle</set-method>
+            <type>org.exoplatform.commons.chromattic.ChromatticLifeCycle</type>
+            <init-params>
+                <value-param>
+                    <name>domain-name</name>
+                    <value>socialnetworknotification</value>
+                </value-param>
+                <value-param>
+                    <name>workspace-name</name>
+                    <value>collaboration</value>
+                </value-param>
+                <values-param>
+                    <name>entities</name>
+                    <value>org.chromattic.ext.ntdef.NTFile</value>
+                    <value>org.chromattic.ext.ntdef.NTFolder</value>
+                    <value>org.chromattic.ext.ntdef.NTResource</value>
+                    <value>org.exoplatform.extension.social.notifications.model.MessageTemplate</value>
+                </values-param>
+                <properties-param>
+                    <name>options</name>
+                    <property name="org.chromattic.api.Option.root_node.path" value="/"/>
+                    <property name="org.chromattic.api.Option.root_node.create" value="true"/>
+                </properties-param>
+            </init-params>
+        </component-plugin>
+    </external-component-plugins>
+
+    <!-- Import the content in the repository -->
+    <external-component-plugins>
+        <target-component>org.exoplatform.services.deployment.WCMContentInitializerService</target-component>
+        <component-plugin>
+            <name>Content Initializer Service</name>
+            <set-method>addPlugin</set-method>
+            <type>org.exoplatform.services.deployment.plugins.XMLDeploymentPlugin</type>
+            <description>XML Deployment Plugin</description>
+            <init-params>
+                <object-param>
+                    <name>Insert the mail template messages</name>
+                    <description>Deployment Descriptor</description>
+                    <object type="org.exoplatform.services.deployment.DeploymentDescriptor">
+                        <field name="target">
+                            <object type="org.exoplatform.services.deployment.DeploymentDescriptor$Target">
+                                <field name="workspace">
+                                    <string>collaboration</string>
+                                </field>
+                                <field name="nodePath">
+                                    <string>/tugdual</string>
+                                </field>
+                            </object>
+                        </field>
+                        <field name="sourcePath">
+                            <string>jar:/resources/mail-messages/mail-templates.xml</string>
+                        </field>
+                        <field name="cleanupPublication">
+                            <boolean>true</boolean>
+                        </field>
+                    </object>
+                </object-param>
+            </init-params>
+        </component-plugin>
+    </external-component-plugins>
 
 </configuration>

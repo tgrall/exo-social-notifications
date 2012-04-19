@@ -29,7 +29,7 @@ public class SpacePendingUserJob extends CronJob {
     private static final Log log = ExoLogger.getLogger(SpacePendingUserJob.class);
 
     public SpacePendingUserJob(InitParams params) throws Exception {
-        super(params);
+         super(params);
         ExoProperties props = params.getPropertiesParam("cronjob.info").getProperties();
         String expression = props.getProperty("expression");
         

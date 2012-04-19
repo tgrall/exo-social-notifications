@@ -44,7 +44,7 @@ public class SpacePendingUserJobExecutor implements Job {
         }
         ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
         SocialNotificationService socialNotificationService = (SocialNotificationService) containerContext.getComponentInstanceOfType(SocialNotificationService.class);
-        socialNotificationService.sendPendingUsersToSpaceManager();
+        socialNotificationService.spaceNotification();
         if ( log.isInfoEnabled() ) {
             log.info("Job Scheduler done sending emails");
         }

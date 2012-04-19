@@ -39,10 +39,10 @@ public class SocialNotificationManager implements ResourceContainer {
     @Path("send-pending-users-to-managers")
     public String sendPendingUsersToSpaceManager() {
         
-        
+      System.out.println("===== sendPendingUsersToSpaceManager  v2 ==== ");
       ExoContainer containerContext = ExoContainerContext.getCurrentContainer();
       SocialNotificationService socNotificationService = (SocialNotificationService)containerContext.getComponentInstanceOfType(SocialNotificationService.class); 
-      socNotificationService.sendPendingUsersToSpaceManager();
+      socNotificationService.spaceNotification();
       return "OK V2";
     }
     
